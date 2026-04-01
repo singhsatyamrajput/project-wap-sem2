@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Anime Character</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <nav class="topbar">
+        <div>
+          <p class="eyebrow">Anime Explorer</p>
+          <h1>Find Anime Character</h1>
+        </div>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark and light mode">
+          <span class="theme-toggle__label">Dark mode</span>
+        </button>
+      </nav>
+
+      <p class="hero-copy">
+        Search anime characters, refine results instantly, and save the ones you want to revisit.
+      </p>
+
+      <section class="search-panel" aria-label="Search controls">
+        <div class="search-row">
+          <label class="sr-only" for="searchInput">Search anime characters</label>
+          <input
+            id="searchInput"
+            class="search-input"
+            type="text"
+            placeholder="Search for Naruto, Luffy, Mikasa..."
+            autocomplete="off"
+          >
+          <button id="searchButton" class="primary-button" type="button">Search</button>
+        </div>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <label for="sortSelect">Sort</label>
+            <select id="sortSelect">
+              <option value="az">A-Z</option>
+              <option value="za">Z-A</option>
+            </select>
+          </div>
+
+          <div class="control-group control-group--wide">
+            <label for="filterInput">Filter by name</label>
+            <input id="filterInput" type="text" placeholder="Type to filter current results">
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="content">
+      <section class="favorites-section" aria-labelledby="favoritesTitle">
+        <div class="section-heading">
+          <h2 id="favoritesTitle">Favorites</h2>
+          <p>Saved in your browser using localStorage.</p>
+        </div>
+        <div id="favoritesEmpty" class="favorites-empty">No favorites yet. Save a character to see them here.</div>
+        <div id="favoritesGrid" class="favorites-grid"></div>
+      </section>
+
+      <section class="results-section" aria-labelledby="resultsTitle">
+        <div class="section-heading">
+          <h2 id="resultsTitle">Results</h2>
+          <p id="resultsMeta">Search for an anime character to get started.</p>
+        </div>
+
+        <div id="loading" class="loading hidden" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <span>Loading characters...</span>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          Search for an anime character to see results here.
+        </div>
+
+        <div id="noResults" class="no-results hidden">
+          No results found. Try another search term.
+        </div>
+
+        <div id="resultsGrid" class="results-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
