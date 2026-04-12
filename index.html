@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Find Anime Character</title>
+  <title>Anime Recommend</title>
+  <meta
+    name="description"
+    content="Get simple anime recommendations by genre, score, and title search using the Jikan API."
+  >
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,82 +18,84 @@
     <header class="hero">
       <nav class="topbar">
         <div>
-          <p class="eyebrow">Anime Explorer</p>
-          <h1>Find Anime Character</h1>
+          <p class="eyebrow">Starter Recommendation App</p>
+          <h1>Anime Recommend</h1>
         </div>
-        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark and light mode">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark and light mode" aria-pressed="false">
           <span class="theme-toggle__label">Dark mode</span>
         </button>
       </nav>
 
       <p class="hero-copy">
-        Search anime characters, refine results instantly, and save the ones you want to revisit.
+        Pick a genre, set a minimum score, and discover anime worth watching.
       </p>
 
-      <section class="search-panel" aria-label="Search controls">
-        <div class="search-row">
-          <label class="sr-only" for="searchInput">Search anime characters</label>
-          <input
-            id="searchInput"
-            class="search-input"
-            type="text"
-            placeholder="Search for Naruto, Luffy, Mikasa..."
-            autocomplete="off"
-          >
-          <button id="searchButton" class="primary-button" type="button">Search</button>
-        </div>
-
-        <div class="controls-row">
+      <section class="controls-panel" aria-label="Recommendation controls">
+        <div class="controls-grid">
           <div class="control-group">
-            <label for="sortSelect">Sort</label>
-            <select id="sortSelect">
-              <option value="az">A-Z</option>
-              <option value="za">Z-A</option>
+            <label for="genreSelect">Genre</label>
+            <select id="genreSelect">
+              <option value="1">Action</option>
+              <option value="2">Adventure</option>
+              <option value="4">Comedy</option>
+              <option value="8">Drama</option>
+              <option value="10">Fantasy</option>
+              <option value="14">Horror</option>
+              <option value="22">Romance</option>
+              <option value="24">Sci-Fi</option>
+              <option value="36">Slice of Life</option>
+              <option value="37">Supernatural</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="scoreSelect">Minimum score</label>
+            <select id="scoreSelect">
+              <option value="0">Any</option>
+              <option value="6">6+</option>
+              <option value="7" selected>7+</option>
+              <option value="8">8+</option>
+              <option value="9">9+</option>
             </select>
           </div>
 
           <div class="control-group control-group--wide">
-            <label for="filterInput">Filter by name</label>
-            <input id="filterInput" type="text" placeholder="Type to filter current results">
+            <label for="searchInput">Filter by title</label>
+            <input id="searchInput" type="text" placeholder="Type to narrow recommendations">
           </div>
+
+          <button id="recommendButton" class="primary-button" type="button">Get Recommendations</button>
         </div>
       </section>
     </header>
 
     <main class="content">
-      <section class="favorites-section" aria-labelledby="favoritesTitle">
-        <div class="section-heading">
-          <h2 id="favoritesTitle">Favorites</h2>
-          <p>Saved in your browser using localStorage.</p>
-        </div>
-        <div id="favoritesEmpty" class="favorites-empty">No favorites yet. Save a character to see them here.</div>
-        <div id="favoritesGrid" class="favorites-grid"></div>
-      </section>
-
       <section class="results-section" aria-labelledby="resultsTitle">
         <div class="section-heading">
-          <h2 id="resultsTitle">Results</h2>
-          <p id="resultsMeta">Search for an anime character to get started.</p>
+          <div>
+            <h2 id="resultsTitle">Recommended Anime</h2>
+            <p id="resultsMeta">Choose your preferences and load recommendations.</p>
+          </div>
         </div>
 
-        <div id="loading" class="loading hidden" aria-live="polite">
+        <div id="loading" class="loading hidden" aria-live="polite" role="status">
           <div class="spinner" aria-hidden="true"></div>
-          <span>Loading characters...</span>
+          <span>Loading recommendations...</span>
         </div>
 
-        <div id="emptyState" class="empty-state">
-          Search for an anime character to see results here.
+        <div id="emptyState" class="empty-state" aria-live="polite">
+          Press "Get Recommendations" to load anime suggestions.
         </div>
 
-        <div id="noResults" class="no-results hidden">
-          No results found. Try another search term.
+        <div id="noResults" class="no-results hidden" aria-live="polite">
+          No anime matched your current filters.
         </div>
 
-        <div id="resultsGrid" class="results-grid"></div>
+        <div id="resultsGrid" class="results-grid" aria-live="polite"></div>
       </section>
     </main>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

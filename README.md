@@ -1,122 +1,46 @@
 # Find Anime Character
 
-## Project Overview
-
-**Find Anime Character** is a web application that allows users to search and explore anime characters in real-time. The application fetches data from a public API and displays detailed information about characters such as their name, anime, image, and description.
-
-The project demonstrates the use of JavaScript, API integration, and dynamic UI rendering along with interactive features like search, filtering, and sorting.
-
----
+Find Anime Character is a responsive front-end web app that searches anime characters with the Jikan API and presents them in a clean card layout.
 
 ## Features
 
-### Search Functionality
+* Search anime characters by name
+* `Enter` key support
+* Debounced search input with a 300ms delay
+* Sort results from A-Z or Z-A
+* Filter current results by name
+* Loading spinner, empty state, and no-results state
+* Dark/light mode toggle
+* Favorites saved in `localStorage`
+* Responsive design for mobile, tablet, and desktop
 
-* Users can search for anime characters by name
-* Real-time results using API calls
+## API
 
-### Filtering
+The app uses the Jikan API:
 
-* Filter characters based on anime series or category
+`https://api.jikan.moe/v4/characters?q={name}`
 
-### Sorting
+## Tech Stack
 
-* Sort characters alphabetically (A–Z / Z–A)
-* Sort based on popularity (if supported by API)
-
-### Favorites (Optional)
-
-* Save favorite characters using localStorage
-
-### Dark / Light Mode (Optional)
-
-* Toggle between themes for better user experience
-
----
-
-## API Used
-
-This project uses a public anime API to fetch character data:
-
-Jikan API (MyAnimeList API)
-https://docs.api.jikan.moe/
-
----
-
-## Technologies Used
-
-* HTML5
-* CSS3 (or Tailwind / Bootstrap)
-* JavaScript (ES6+)
+* HTML
+* CSS
+* JavaScript (ES6)
 * Fetch API
-* Array Higher-Order Functions:
-
-  * map()
-  * filter()
-  * sort()
-  * find()
-
----
-
-## How It Works
-
-1. User enters a character name in the search bar
-2. The app sends a request to the API using fetch
-3. Data is received and processed
-4. Characters are displayed dynamically on the UI
-5. Users can filter, sort, and interact with results
-
----
 
 ## Project Structure
 
-```
-Find-Anime-Character
-│── index.html
-│── style.css
-│── script.js
-│── README.md
-```
+* `index.html` - structure and UI markup
+* `style.css` - styling, layout, and theming
+* `script.js` - API calls, rendering, sorting, filtering, debounce, and favorites
+* `README.md` - project notes
 
----
+## Run Locally
 
-## Responsiveness
+1. Open the project folder.
+2. Open `index.html` in your browser.
+3. Search for a character like `Naruto`, `Luffy`, or `Mikasa`.
 
-The application is fully responsive and works on:
+## Notes
 
-* Mobile devices
-* Tablets
-* Desktop
-
----
-
-## Bonus Features (if implemented)
-
-* Debounced search input
-* Loading spinner while fetching data
-* Pagination or infinite scroll
-* Local storage for favorites
-
----
-
-## Future Improvements
-
-* Add voice search
-* Show character voice actors
-* Add anime recommendations based on character
-* Improve UI animations
-
----
-
-## Setup Instructions
-
-1. Clone the repository:
-   git clone <your-repo-link>
-
-2. Open the project folder:
-   cd Find-Anime-Character
-
-3. Open index.html in your browser
-
----
-
+* Theme choice and favorites are stored in the browser with `localStorage`.
+* If the Jikan API rate-limits requests, wait a moment and try again.

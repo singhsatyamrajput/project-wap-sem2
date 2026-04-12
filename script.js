@@ -1,261 +1,157 @@
-const API_BASE_URL = "https://api.jikan.moe/v4/characters?q=";
-const FAVORITES_KEY = "find-anime-character-favorites";
-const THEME_KEY = "find-anime-character-theme";
+const API_BASE_URL = "https://api.jikan.moe/v4/anime";
+const THEME_KEY = "anime-recommend-theme";
 
+const genreSelect = document.getElementById("genreSelect");
+const scoreSelect = document.getElementById("scoreSelect");
 const searchInput = document.getElementById("searchInput");
-const searchButton = document.getElementById("searchButton");
-const sortSelect = document.getElementById("sortSelect");
-const filterInput = document.getElementById("filterInput");
+const recommendButton = document.getElementById("recommendButton");
 const loading = document.getElementById("loading");
 const emptyState = document.getElementById("emptyState");
 const noResults = document.getElementById("noResults");
 const resultsGrid = document.getElementById("resultsGrid");
 const resultsMeta = document.getElementById("resultsMeta");
 const themeToggle = document.getElementById("themeToggle");
-const favoritesGrid = document.getElementById("favoritesGrid");
-const favoritesEmpty = document.getElementById("favoritesEmpty");
 
-let fetchedCharacters = [];
-let displayedCharacters = [];
-let favorites = loadFavorites();
+let animeList = [];
+let filteredAnime = [];
+let requestController = null;
 
 initializeApp();
 
 function initializeApp() {
   applySavedTheme();
-  renderFavorites();
   attachEventListeners();
 }
 
 function attachEventListeners() {
-  searchButton.addEventListener("click", () => performSearch(searchInput.value.trim()));
+  recommendButton.addEventListener("click", fetchRecommendations);
+
+  searchInput.addEventListener("input", () => {
+    renderResults();
+  });
 
   searchInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
-      performSearch(searchInput.value.trim());
+      event.preventDefault();
+      renderResults();
     }
   });
 
-  searchInput.addEventListener(
-    "input",
-    debounce((event) => {
-      const query = event.target.value.trim();
-      if (query.length >= 2) {
-        performSearch(query);
-      }
-
-      if (query.length === 0) {
-        clearResultsView("Search for an anime character to see results here.");
-      }
-    }, 300)
-  );
-
-  sortSelect.addEventListener("change", renderResults);
-  filterInput.addEventListener("input", renderResults);
   themeToggle.addEventListener("click", toggleTheme);
 }
 
-async function performSearch(query) {
-  if (!query) {
-    clearResultsView("Please enter a character name to search.");
-    return;
+async function fetchRecommendations() {
+  if (requestController) {
+    requestController.abort();
   }
 
+  requestController = new AbortController();
   setLoadingState(true);
   hideMessages();
+  resultsGrid.innerHTML = "";
+  resultsMeta.textContent = "Loading recommendations...";
+
+  const genre = genreSelect.value;
+  const minScore = scoreSelect.value;
+  const url = `${API_BASE_URL}?genres=${genre}&order_by=score&sort=desc&limit=12&min_score=${minScore}`;
 
   try {
-    const response = await fetch(`${API_BASE_URL}${encodeURIComponent(query)}`);
+    const response = await fetch(url, { signal: requestController.signal });
+    const result = await response.json();
 
     if (!response.ok) {
-      throw new Error("Unable to fetch anime characters right now.");
+      throw new Error(result?.message || "Unable to load recommendations right now.");
     }
 
-    const result = await response.json();
-    fetchedCharacters = Array.isArray(result.data) ? result.data : [];
-
+    animeList = Array.isArray(result.data) ? result.data : [];
     renderResults();
   } catch (error) {
-    fetchedCharacters = [];
-    displayedCharacters = [];
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    animeList = [];
+    filteredAnime = [];
     resultsGrid.innerHTML = "";
-    emptyState.textContent = "Something went wrong while fetching data. Please try again.";
+    emptyState.textContent = getErrorMessage(error);
     emptyState.classList.remove("hidden");
-    noResults.classList.add("hidden");
-    resultsMeta.textContent = error.message;
+    resultsMeta.textContent = "Request failed";
   } finally {
     setLoadingState(false);
+    requestController = null;
   }
 }
 
 function renderResults() {
-  const filterValue = filterInput.value.trim().toLowerCase();
+  const searchValue = searchInput.value.trim().toLowerCase();
 
-  const filteredCharacters = fetchedCharacters.filter((character) =>
-    character.name.toLowerCase().includes(filterValue)
+  filteredAnime = animeList.filter((anime) =>
+    anime.title.toLowerCase().includes(searchValue)
   );
 
-  const sortedCharacters = filteredCharacters.sort((first, second) => {
-    const firstName = first.name.toLowerCase();
-    const secondName = second.name.toLowerCase();
-
-    return sortSelect.value === "za"
-      ? secondName.localeCompare(firstName)
-      : firstName.localeCompare(secondName);
-  });
-
-  displayedCharacters = sortedCharacters;
   resultsGrid.innerHTML = "";
 
-  if (fetchedCharacters.length === 0) {
-    noResults.classList.remove("hidden");
-    emptyState.classList.add("hidden");
-    resultsMeta.textContent = "0 characters found";
+  if (animeList.length === 0) {
+    if (!loading.classList.contains("hidden")) {
+      return;
+    }
+
+    emptyState.classList.remove("hidden");
+    noResults.classList.add("hidden");
+    resultsMeta.textContent = "Choose your preferences and load recommendations.";
     return;
   }
 
-  if (displayedCharacters.length === 0) {
-    noResults.textContent = "No results match the current filter.";
-    noResults.classList.remove("hidden");
+  if (filteredAnime.length === 0) {
     emptyState.classList.add("hidden");
-    resultsMeta.textContent = `${fetchedCharacters.length} characters found, 0 match the filter`;
+    noResults.classList.remove("hidden");
+    resultsMeta.textContent = `${animeList.length} anime loaded, 0 match the title filter`;
     return;
   }
 
-  noResults.classList.add("hidden");
-  emptyState.classList.add("hidden");
-
-  resultsMeta.textContent = `${displayedCharacters.length} of ${fetchedCharacters.length} characters shown`;
-
-  const cards = displayedCharacters.map((character) => createCharacterCard(character)).join("");
-  resultsGrid.innerHTML = cards;
-
-  resultsGrid.querySelectorAll(".favorite-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const characterId = Number(button.dataset.id);
-      toggleFavorite(characterId);
-    });
-  });
+  hideMessages();
+  resultsMeta.textContent = `${filteredAnime.length} recommendations shown`;
+  resultsGrid.innerHTML = filteredAnime.map((anime) => createAnimeCard(anime)).join("");
 }
 
-function createCharacterCard(character) {
-  const isSaved = favorites.some((favorite) => favorite.mal_id === character.mal_id);
-  const description = getShortDescription(character.about);
-  const imageUrl = character.images?.jpg?.image_url || createPlaceholderImage(character.name);
-  const safeName = escapeHtml(character.name);
-  const safeDescription = escapeHtml(description);
+function createAnimeCard(anime) {
+  const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || createPlaceholderImage(anime.title);
+  const safeTitle = escapeHtml(anime.title);
+  const safeSynopsis = escapeHtml(getShortSynopsis(anime.synopsis));
+  const genres = Array.isArray(anime.genres) ? anime.genres.slice(0, 2).map((genre) => genre.name) : [];
 
   return `
-    <article class="card">
-      <div class="card-image-wrap">
-        <img class="card-image" src="${imageUrl}" alt="${safeName}">
+    <article class="anime-card">
+      <div class="anime-image-wrap">
+        <img class="anime-image" src="${imageUrl}" alt="${safeTitle}" loading="lazy">
       </div>
-      <div class="card-body">
-        <h3 class="card-title">${safeName}</h3>
-        <p class="card-description">${safeDescription}</p>
-        <div class="card-actions">
-          <button
-            class="favorite-button ${isSaved ? "is-saved" : ""}"
-            type="button"
-            data-id="${character.mal_id}"
-          >
-            ${isSaved ? "Saved" : "Save Favorite"}
-          </button>
+      <div class="anime-body">
+        <h3 class="anime-title">${safeTitle}</h3>
+        <div class="anime-meta">
+          <span class="meta-chip">Score ${anime.score ?? "N/A"}</span>
+          <span class="meta-chip">${escapeHtml(anime.type || "Unknown")}</span>
+          ${genres.map((genre) => `<span class="meta-chip">${escapeHtml(genre)}</span>`).join("")}
         </div>
+        <p class="anime-description">${safeSynopsis}</p>
+        <a class="anime-link" href="${anime.url}" target="_blank" rel="noopener noreferrer">View Details</a>
       </div>
     </article>
   `;
 }
 
-function renderFavorites() {
-  favoritesGrid.innerHTML = "";
-
-  if (favorites.length === 0) {
-    favoritesEmpty.classList.remove("hidden");
-    return;
+function getShortSynopsis(synopsis = "") {
+  if (!synopsis || !synopsis.trim()) {
+    return "No synopsis available for this anime.";
   }
 
-  favoritesEmpty.classList.add("hidden");
-
-  favoritesGrid.innerHTML = favorites
-    .map((character) => {
-      const imageUrl = character.images?.jpg?.image_url || createPlaceholderImage(character.name);
-      const safeName = escapeHtml(character.name);
-      const safeDescription = escapeHtml(getShortDescription(character.about));
-
-      return `
-        <article class="favorite-card">
-          <div class="favorite-image-wrap">
-            <img class="favorite-image" src="${imageUrl}" alt="${safeName}">
-          </div>
-          <div class="favorite-body">
-            <h3 class="favorite-title">${safeName}</h3>
-            <p class="favorite-description">${safeDescription}</p>
-            <div class="favorite-actions">
-              <button class="remove-button" type="button" data-id="${character.mal_id}">
-                Remove Favorite
-              </button>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-
-  favoritesGrid.querySelectorAll(".remove-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const characterId = Number(button.dataset.id);
-      toggleFavorite(characterId);
-    });
-  });
-}
-
-function toggleFavorite(characterId) {
-  const existingFavorite = favorites.find((character) => character.mal_id === characterId);
-
-  if (existingFavorite) {
-    favorites = favorites.filter((character) => character.mal_id !== characterId);
-  } else {
-    const characterToSave = fetchedCharacters.find((character) => character.mal_id === characterId);
-
-    if (!characterToSave) {
-      return;
-    }
-
-    favorites = [characterToSave, ...favorites];
-  }
-
-  saveFavorites();
-  renderFavorites();
-  renderResults();
-}
-
-function loadFavorites() {
-  try {
-    const storedFavorites = localStorage.getItem(FAVORITES_KEY);
-    return storedFavorites ? JSON.parse(storedFavorites) : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-function saveFavorites() {
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
-}
-
-function getShortDescription(description = "") {
-  if (!description.trim()) {
-    return "No description available for this character yet.";
-  }
-
-  const normalizedText = description.replace(/\s+/g, " ").trim();
-  return normalizedText.length > 170
-    ? `${normalizedText.slice(0, 170).trim()}...`
+  const normalizedText = synopsis.replace(/\s+/g, " ").trim();
+  return normalizedText.length > 180
+    ? `${normalizedText.slice(0, 180).trim()}...`
     : normalizedText;
 }
 
-function createPlaceholderImage(name = "Character") {
-  const safeLabel = escapeHtml(name.slice(0, 22));
+function createPlaceholderImage(title = "Anime") {
+  const safeLabel = escapeHtml(title.slice(0, 20));
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500">
       <defs>
@@ -265,9 +161,9 @@ function createPlaceholderImage(name = "Character") {
         </linearGradient>
       </defs>
       <rect width="400" height="500" rx="32" fill="url(#g)" />
-      <circle cx="200" cy="170" r="72" fill="rgba(255,255,255,0.2)" />
-      <rect x="88" y="280" width="224" height="28" rx="14" fill="rgba(255,255,255,0.22)" />
-      <text x="200" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="26" font-weight="700">
+      <circle cx="200" cy="165" r="70" fill="rgba(255,255,255,0.18)" />
+      <rect x="80" y="280" width="240" height="26" rx="13" fill="rgba(255,255,255,0.2)" />
+      <text x="200" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="700">
         ${safeLabel}
       </text>
     </svg>
@@ -277,7 +173,7 @@ function createPlaceholderImage(name = "Character") {
 }
 
 function escapeHtml(value = "") {
-  return value
+  return String(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -285,10 +181,24 @@ function escapeHtml(value = "") {
     .replace(/'/g, "&#39;");
 }
 
+function getErrorMessage(error) {
+  const message = typeof error?.message === "string" ? error.message.toLowerCase() : "";
+
+  if (message.includes("rate limit")) {
+    return "The anime API is temporarily rate-limited. Please wait a moment and try again.";
+  }
+
+  if (message.includes("failed to fetch") || message.includes("network")) {
+    return "Unable to reach the anime service right now. Check your connection and try again.";
+  }
+
+  return "Something went wrong while loading anime recommendations.";
+}
+
 function setLoadingState(isLoading) {
   loading.classList.toggle("hidden", !isLoading);
-  searchButton.disabled = isLoading;
-  searchButton.textContent = isLoading ? "Searching..." : "Search";
+  recommendButton.disabled = isLoading;
+  recommendButton.textContent = isLoading ? "Loading..." : "Get Recommendations";
 }
 
 function hideMessages() {
@@ -296,28 +206,10 @@ function hideMessages() {
   noResults.classList.add("hidden");
 }
 
-function clearResultsView(message) {
-  fetchedCharacters = [];
-  displayedCharacters = [];
-  resultsGrid.innerHTML = "";
-  noResults.classList.add("hidden");
-  emptyState.textContent = message;
-  emptyState.classList.remove("hidden");
-  resultsMeta.textContent = "Search for an anime character to get started.";
-}
-
-function debounce(callback, delay) {
-  let timeoutId;
-
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => callback(...args), delay);
-  };
-}
-
 function applySavedTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY) || "light";
   document.body.classList.toggle("dark", savedTheme === "dark");
+  themeToggle.setAttribute("aria-pressed", String(savedTheme === "dark"));
   updateThemeLabel(savedTheme);
 }
 
@@ -325,10 +217,11 @@ function toggleTheme() {
   const isDark = document.body.classList.toggle("dark");
   const nextTheme = isDark ? "dark" : "light";
   localStorage.setItem(THEME_KEY, nextTheme);
+  themeToggle.setAttribute("aria-pressed", String(isDark));
   updateThemeLabel(nextTheme);
 }
 
 function updateThemeLabel(theme) {
-  const label = theme === "dark" ? "Light mode" : "Dark mode";
-  themeToggle.querySelector(".theme-toggle__label").textContent = label;
+  themeToggle.querySelector(".theme-toggle__label").textContent =
+    theme === "dark" ? "Light mode" : "Dark mode";
 }
